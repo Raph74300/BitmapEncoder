@@ -225,7 +225,7 @@ void initSteganography(TeSteganographyMode _eSteganographyMode)
 int main()
 {
     string imagePathSrc= "image.bmp";
-    string imagePathDest = "encoded_imageHSB.bmp";
+    string imagePathDest = "encoded_image.bmp";
     string secretMessage  ="";
     initSteganography(MODIFIY_LEAST_SIGNIFICANT_BIT); // Be carreful, don't forget to initialize...
     
