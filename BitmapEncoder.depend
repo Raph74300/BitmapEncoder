@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1718372839 source:c:\dev\bitmapencoder\bitmapencoder\bitmapmsgencoder\main.cpp
+1718571081 source:c:\dev\bitmapencoder\bitmapencoder\bitmapmsgencoder\main.cpp
 	<iostream>
 	<fstream>
 	<vector>

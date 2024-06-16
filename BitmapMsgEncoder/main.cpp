@@ -140,7 +140,7 @@ void encodeMessage(const string &imagePath, const string &message, const string 
         BITMAPINFOHEADER infoHeader;
         imageFile.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
         imageFile.read(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
-        
+
         if (infoHeader.biSizeImage == 0)
         {
             int bytesPerPixel = infoHeader.biBitCount / 8;
@@ -149,14 +149,14 @@ void encodeMessage(const string &imagePath, const string &message, const string 
             cout << "biSizeImage computed from biWidth and biHeight." << endl;
         }
         else{ /* Nothing to do */ }
-        
+
         cout <<  "Max characters :  " << infoHeader.biSizeImage/8 << endl;
-        
+
         vector<unsigned char> imageData(infoHeader.biSizeImage);
         imageFile.seekg(fileHeader.bfOffBits, ios::beg);
         imageFile.read(reinterpret_cast<char*>(imageData.data()), infoHeader.biSizeImage);
         imageFile.close();
-        
+
         size_t messageLength = message.length();
         size_t messageBitsLength = messageLength * 8;
         if (messageBitsLength > infoHeader.biSizeImage)
@@ -166,13 +166,13 @@ void encodeMessage(const string &imagePath, const string &message, const string 
         else
         {
                 pfConcealMessage(imageData, message);  // Be carreful, don't forget to initialize...
-          
+
                 ofstream outputFile(outputPath, ios::binary);
                 outputFile.write(reinterpret_cast<const char*>(&fileHeader), sizeof(fileHeader));
                 outputFile.write(reinterpret_cast<const char*>(&infoHeader), sizeof(infoHeader));
                 outputFile.write(reinterpret_cast<const char*>(imageData.data()), infoHeader.biSizeImage);
                 outputFile.close();
-                
+
                 cout << "Message encoded successfully" << endl;
         }
     }
@@ -191,16 +191,20 @@ void decodeMessage(const string &imagePath, size_t messageLength)
         BITMAPINFOHEADER infoHeader;
         imageFile.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
         imageFile.read(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
-        
+
         vector<unsigned char> imageData(infoHeader.biSizeImage);
         imageFile.seekg(fileHeader.bfOffBits, ios::beg);
         imageFile.read(reinterpret_cast<char*>(imageData.data()), infoHeader.biSizeImage);
         imageFile.close();
-        
+
         vector<char> message(messageLength + 1, 0);
-        
+
         pfExtractMessage(imageData, message, messageLength); // Be carreful, don't forget to initialize...
-        
+
+
+         ofstream outputFile("outputs/decoded_message.txt");
+         outputFile.write(message.data(),messageLength);
+         outputFile.close();
         cout << "Decoded message: " << message.data() << "\n";
     }
 }
@@ -224,12 +228,12 @@ void initSteganography(TeSteganographyMode _eSteganographyMode)
 
 int main()
 {
-    string imagePathSrc= "image.bmp";
-    string imagePathDest = "encoded_image.bmp";
+    string imagePathSrc= "inputs/image.bmp";
+    string imagePathDest = "outputs/encoded_image.bmp";
     string secretMessage  ="";
-    initSteganography(MODIFIY_LEAST_SIGNIFICANT_BIT); // Be carreful, don't forget to initialize...
-    
-    ifstream file("message.txt");
+    initSteganography(MODIFIY_LEAST_SIGNIFICANT_BIT); // Be careful, don't forget to initialize...
+
+    ifstream file("inputs/message.txt");
     if (!file.is_open())
     {
         cerr << "Cannot open message" << endl;
@@ -242,10 +246,11 @@ int main()
             secretMessage.append(line);
         };
         file.close();
-        
+
         encodeMessage(imagePathSrc, secretMessage , imagePathDest);
         decodeMessage(imagePathDest, secretMessage.length());
     }
-
+    std::cout << "Press any key to exit...";
+    std::cin.get();  // Attendre que l'utilisateur appuie sur Entrée
     return 0;
 }
