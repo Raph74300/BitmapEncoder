@@ -36,11 +36,11 @@ struct BITMAPINFOHEADER {
 
 typedef enum
 {
-    MODIFIY_LEAST_SIGNIFICANT_BIT= 0,
+    MODIFY_LEAST_SIGNIFICANT_BIT= 0,
     MODIFY_MOST_SIGNIFICANT_BIT
 }TeSteganographyMode;
 
-void initSteganography(TeSteganographyMode _eSteganographyMode = MODIFIY_LEAST_SIGNIFICANT_BIT);
+void initSteganography(TeSteganographyMode _eSteganographyMode = MODIFY_LEAST_SIGNIFICANT_BIT);
 
 void (*pfConcealMessage)(vector<unsigned char>&, const string&);
 void concealMessageAtLSBit(vector<unsigned char>  &imageData, const string &message);
@@ -217,7 +217,7 @@ void initSteganography(TeSteganographyMode _eSteganographyMode)
             pfConcealMessage = concealMessageAtMSBit;
             pfExtractMessage = extractMessageFromHSBit;
             break;
-        case MODIFIY_LEAST_SIGNIFICANT_BIT:
+        case MODIFY_LEAST_SIGNIFICANT_BIT:
             pfConcealMessage = concealMessageAtLSBit;
             pfExtractMessage = extractMessageFromLSBit;
             break;
