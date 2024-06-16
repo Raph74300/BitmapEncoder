@@ -34,6 +34,98 @@ struct BITMAPINFOHEADER {
 };
 #pragma pack(pop)
 
+typedef enum
+{
+    MODIFIY_LEAST_SIGNIFICANT_BIT= 0,
+    MODIFY_MOST_SIGNIFICANT_BIT
+}TeSteganographyMode;
+
+void (*pfConcealMessage)(vector<unsigned char>&, const string&);
+    void concealMessageAtLSBit(vector<unsigned char>  &imageData, const string &message);
+    void concealMessageAtMSBit(vector<unsigned char>  &imageData, const string &message);
+
+
+void (*pfExtractMessage)(const vector<unsigned char>&, vector<char>&, size_t messageLength);
+
+
+void setSteganographyRule(TeSteganographyMode _eSteganographyMode = MODIFIY_LEAST_SIGNIFICANT_BIT);
+
+void encodeMessage(const string &imagePath, const string &message, const string &outputPath);
+void decodeMessage(const string &imagePath, size_t messageLength);
+
+void concealMessageAtLSBit(vector<unsigned char>  &imageData, const string &message)
+{
+    size_t bitIndex = 0;
+    // Explanations :
+    // & 0xFE used to erase the lowest bit of the pixel.
+    // >> (7- j )  --> bit 7, 6, 5, 4, 3, 2, 1, 0 are successively positioned at the lowest bit
+    // & 1 for isolating the least significant bit 0 or 1.
+    // | add the bits of the message.
+    for (size_t i = 0; i < message.length(); ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+            imageData[bitIndex] = (imageData[bitIndex] & 0xFE) | ((message[i] >> (7 - j)) & 1);
+            bitIndex++;
+        }
+    }
+}
+
+void concealMessageAtMSBit(vector<unsigned char>  &imageData, const string &message)
+{
+    size_t bitIndex = 0;
+    // Explanations :
+    // & 0xEF used to erase the hightest bit of the pixel.
+    // << ( j )  --> bit 7, 6, 5, 4, 3, 2, 1, 0 are successively positioned at the highest bit.
+    // & 0x80 for isolating the most significant bit 0 or 1.
+    // | add the bits of the message.
+    for (size_t i = 0; i < message.length(); ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+            imageData[bitIndex] = (imageData[bitIndex] & 0xEF) | ((message[i] << j) & 0x80);
+            bitIndex++;
+        }
+    }
+}
+
+void extractMessageFromLSBit(const vector<unsigned char> &imageData, vector<char> &message, size_t messageLength)
+{
+    size_t bitIndex = 0;
+    // Explanations :
+    // Get the 1st bit of the hidden message. Must start at bitIndex =0;
+    // & 1 for isolating the least significant bit 0 or 1.
+    // << (7 - j )  --> ImageDate at bitIndex 0, 1, 2, 3, 4, 5, 6, 7 are progressively repositionned to create a valid char byte.
+    // | add the bits 0-1 to the message at i.
+    for (size_t i = 0; i < messageLength; ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+           message[i] |= ((imageData[bitIndex] & 1) << (7 - j));
+           bitIndex++;
+        }
+    }
+}
+
+void extractMessageFromHSBit(const vector<unsigned char> &imageData, vector<char> &message, size_t messageLength)
+{
+    size_t bitIndex = 0;
+    // Explanations :
+    // For each, get the MS bit of the hidden message at imageData bitIndex 0;
+    // & 0x80 for isolating the most significant bit 0 or 1.
+    // >> j  -> Each MS bit from ImageDate at bitIndex 0, 1, 2, 3, 4, 5, 6, 7 are progressively repositionned to create a valid char byte.
+    // | add the bits 0-1 to the message at i.
+    for (size_t i = 0; i < messageLength; ++i)
+    {
+        for (int j = 0; j < 8; ++j)
+        {
+           message[i] |= ((imageData[bitIndex] & 0x80) >> j);
+           bitIndex++;
+        }
+    }
+}
+
+
 void encodeMessage(const string &imagePath, const string &message, const string &outputPath)
 {
     std::ifstream imageFile(imagePath, ios::binary);
@@ -72,15 +164,7 @@ void encodeMessage(const string &imagePath, const string &message, const string 
         }
         else
         {
-            size_t bitIndex = 0;
-            for (size_t i = 0; i < messageLength; ++i)
-            {
-                for (int j = 0; j < 8; ++j)
-                {
-                    imageData[bitIndex] = (imageData[bitIndex] & 0xFE) | ((message[i] >> (7 - j)) & 1);
-                    bitIndex++;
-                }
-            }
+            pfConcealMessage(imageData, message);
             
             ofstream outputFile(outputPath, ios::binary);
             outputFile.write(reinterpret_cast<const char*>(&fileHeader), sizeof(fileHeader));
@@ -93,7 +177,7 @@ void encodeMessage(const string &imagePath, const string &message, const string 
     }
 }
 
-void decodeMessage(const std::string &imagePath, size_t messageLength) 
+void decodeMessage(const string &imagePath, size_t messageLength)
 {
     std::ifstream imageFile(imagePath, ios::binary);
     if (!imageFile.is_open())
@@ -113,38 +197,51 @@ void decodeMessage(const std::string &imagePath, size_t messageLength)
         imageFile.close();
         
         vector<char> message(messageLength + 1, 0);
-        size_t bitIndex = 0;
-        for (size_t i = 0; i < messageLength; ++i) {
-            for (int j = 0; j < 8; ++j) {
-               message[i] |= ((imageData[bitIndex] & 1) << (7 - j));
-                bitIndex++;
-            }
-        }
+        
+        pfExtractMessage(imageData, message, messageLength);
+        
         cout << "Decoded message: " << message.data() << "\n";
+    }
+}
+
+void setSteganographyRule(TeSteganographyMode _eSteganographyMode)
+{
+    switch (_eSteganographyMode)
+    {
+        case MODIFY_MOST_SIGNIFICANT_BIT:
+            pfConcealMessage = concealMessageAtMSBit;
+            pfExtractMessage = extractMessageFromHSBit;
+            break;
+        case MODIFIY_LEAST_SIGNIFICANT_BIT:
+            pfConcealMessage = concealMessageAtLSBit;
+            pfExtractMessage = extractMessageFromLSBit;
+            break;
+        default:
+            break;
     }
 }
 
 int main()
 {
     string imagePathSrc= "image.bmp";
-    string imagePathDest = "encoded_image.bmp";
+    string imagePathDest = "encoded_imageHSB.bmp";
     string secretMessage  ="";
     
-    std::ifstream fichier("message.txt");
-    if (!fichier.is_open())
+    ifstream file("message.txt");
+    if (!file.is_open())
     {
-        std::cerr << "Cannot open message" << std::endl;
+        cerr << "Cannot open message" << endl;
     }
     else
     {
-        std::string ligne;
-        while (std::getline(fichier, ligne))
+        string line;
+        while (getline(file, line))
         {
-            secretMessage.append(ligne);
+            secretMessage.append(line);
         };
-        fichier.close();
+        file.close();
         
-        
+        setSteganographyRule(MODIFY_MOST_SIGNIFICANT_BIT);
         encodeMessage(imagePathSrc, secretMessage , imagePathDest);
         decodeMessage(imagePathDest, secretMessage.length());
     }
