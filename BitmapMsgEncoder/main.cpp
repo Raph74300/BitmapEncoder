@@ -165,7 +165,7 @@ void encodeMessage(const string &imagePath, const string &message, const string 
         }
         else
         {
-                pfConcealMessage(imageData, message);  // Be carreful, don't forget to initialize...
+                pfConcealMessage(imageData, message);  // Be careful, don't forget to initialize...
 
                 ofstream outputFile(outputPath, ios::binary);
                 outputFile.write(reinterpret_cast<const char*>(&fileHeader), sizeof(fileHeader));
@@ -226,12 +226,17 @@ void initSteganography(TeSteganographyMode _eSteganographyMode)
     }
 }
 
+void displayMenu(void)
+{
+
+
+}
 int main()
 {
     string imagePathSrc= "inputs/image.bmp";
     string imagePathDest = "outputs/encoded_image.bmp";
     string secretMessage  ="";
-    initSteganography(MODIFIY_LEAST_SIGNIFICANT_BIT); // Be careful, don't forget to initialize...
+    initSteganography(MODIFY_LEAST_SIGNIFICANT_BIT); // Be careful, don't forget to initialize...
 
     ifstream file("inputs/message.txt");
     if (!file.is_open())
