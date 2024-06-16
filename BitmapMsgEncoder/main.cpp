@@ -1,7 +1,6 @@
 //
 //  main.cpp
 //  BitmapMsgEncoder
-//
 //  Created by Raphaël Oundjian on 14/06/2024.
 //
 #include <iostream>
@@ -99,8 +98,7 @@ void decodeMessage(const std::string &imagePath, size_t messageLength)
     std::ifstream imageFile(imagePath, ios::binary);
     if (!imageFile.is_open())
     {
-        cerr << "Unable to open image file\n";
-        
+        cerr << "Cannot open image\n";
     }
     else
     {
@@ -118,7 +116,7 @@ void decodeMessage(const std::string &imagePath, size_t messageLength)
         size_t bitIndex = 0;
         for (size_t i = 0; i < messageLength; ++i) {
             for (int j = 0; j < 8; ++j) {
-                message[i] |= ((imageData[bitIndex] & 1) << (7 - j));
+               message[i] |= ((imageData[bitIndex] & 1) << (7 - j));
                 bitIndex++;
             }
         }
@@ -128,10 +126,29 @@ void decodeMessage(const std::string &imagePath, size_t messageLength)
 
 int main()
 {
-    string  imagePathSrc= "image_lion.bmp";
-    string imagePathDest = "imageSecret.bmp";
-    string secretMessage = "Hello Nicolas";
-    encodeMessage(imagePathSrc, secretMessage , imagePathDest);
-    decodeMessage(imagePathDest, secretMessage.length());
+    string imagePathSrc= "image.bmp";
+    string imagePathDest = "encoded_image.bmp";
+    string secretMessage  ="";
+    
+    std::ifstream fichier("message.txt");
+    if (!fichier.is_open())
+    {
+        std::cerr << "Cannot open message" << std::endl;
+    }
+    else
+    {
+        std::string ligne;
+        while (std::getline(fichier, ligne))
+        {
+            secretMessage.append(ligne);
+        };
+        fichier.close();
+        
+        
+        encodeMessage(imagePathSrc, secretMessage , imagePathDest);
+        decodeMessage(imagePathDest, secretMessage.length());
+    }
+
+  
     return 0;
 }
